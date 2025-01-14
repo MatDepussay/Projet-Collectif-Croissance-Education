@@ -1,0 +1,84 @@
+---
+title: "Projet Collectif 2"
+author: "Marc, Hugo, Ludovic, Maxime, Jean-Baptiste, Mathias"
+date: "2024-04-05"
+output:
+  pdf_document:
+    toc: true
+  html_document:
+    toc: true
+    toc_float: true
+    theme: spacelab
+---
+
+```{r options_chunk, echo = FALSE}
+knitr::opts_chunk$set(message = FALSE,
+                      warning = FALSE,
+                      fig.align = 'center')
+require(foreign)
+require(psych)
+require(data.table)
+require(lmtest)
+require(sandwich)
+require(margins)
+require(haven)
+require(readxl)
+require(AER)
+```
+
+## Introduction
+
+  Pour commencer, résumons rapidement les conclusions faites durant le projet collectif numéro 1. Nous avons vu que la relation entre éducation et croissance économique est loin d'être linéaire et simple à appréhender. En effet, nous risquons d'être confronté à un problème d'endogénéité. La croissance étant un facteur complexe à évaluer, la simple présence de l'éducation pour l'estimer n'est pas suffisante. Si l'idée que le diplôme soit un indicateur direct de productivité est remise en question par diverses théories, il reste indéniable que l'éducation joue un rôle crucial dans le développement socio-économique. Parfois, cependant, le lien entre éducation et productivité peut être affaibli, surtout dans des contextes où les opportunités d'emploi ne correspondent pas nécessairement au niveau de compétences acquis. Malgré ces nuances, la littérature suggère une corrélation positive entre éducation et croissance économique. Dans cette optique, il est essentiel d'explorer plus en profondeur les mécanismes sous-jacents pour mieux comprendre comment l'éducation peut réellement stimuler le développement économique. Nous allons maintenant étoffer nos recherches avec des données prélevés sur WDI ainsi que les bases de données données par le professeur.
+
+
+## Construction des regressions
+
+### regression 1
+
+```{r, echo = FALSE}
+
+data2 <- read_excel("Data/Panel_3BResearchersDataset2018.xls", sheet = "panel")
+excel_sheets("Data/Panel_3BResearchersDataset2018.xls")
+pain<- read.csv("Data/compil2r.csv")
+sub <- subset(data2, ...2 %in% c("Burkina Faso", "Cote d'Ivoire", "Gambia", "Ghana", "Guina", "Guinea-Bissau", "Liberia", "Mali", "Niger",  "Nigeria", "Senegal", "Sierra Leone", "Togo") & ...3 %in% c(1985:2015))
+moyenne_par_annee <- aggregate(. ~ ...3, data = sub[, -c(1, 2)], FUN = mean)
+pain2 <- cbind(pain, moyenne_par_annee)
+pain2[pain2 == ".."] <- NA
+```
+
+
+```{r, echo = FALSE}
+reg1 <-lm(pib ~pain2$Adult.literacy.rate..population.15..years..both.sexes.... ,data =pain2)
+summary(reg1)
+```
+
+On peux noter ici que le coefficient estimant le taux de lettres dans la population est tres significatif, cependant, il faut prendre en compte quelques facteurs, cette regression est sans aucun doute biaisee du fait de variables omises, en effet le pib est un indicateur tres vaste et qui est influence par de nombreux facteurs que nous avons omis dans cette regression, on peux citer par exemple la situation geopolitique du pays ou dans ce cas precis, du sous continent, le taux de change de la monnaie, le taux d'ouverture, le taux de chomage etc. 
+Il serait trop long et trop complexe de tenter de toutes les prendre en consideration dans notre modele afin d'eviter les problemes d'endogeneite, nous avons choisi de passer outre cela et quand meme realiser ces regressions bien que nous sachions d'avance qu'elles seront biaisees.
+On note donc ici un coefficient particulierement significatif, signifiactifs a 0%, qui capte sans aucun doute l'effet d'autres variables omises comme dit precedemment.
+On obtient toutefois un R carre ajuste de 0.6904, demontrant que ce modele explique a 69% la variance du PIB du sous continent de l'Afrique Sub-Saharienne.
+
+
+### regression 2
+
+```{r, echo = FALSE}
+reg2<-lm(pib~pain2$Government.expenditure.on.education.as...of.GDP...., data = pain2)
+summary(reg2)
+```
+
+Nous pouvons remarquer qu'ici c'est dificilement mesurable parce qu'on manque de données. Cette variable seule n'est donc pas fiable.
+
+
+### regression 3
+
+```{r, echo = FALSE}
+reg3<-ivreg(pib~Government.expenditure.on.education.as...of.GDP....+log(Adult.literacy.rate..population.15..years..both.sexes....)+log(`B-Socioeconomic Conditions`)+log(`L-Bureaucracy Quality`)|`B-Socioeconomic Conditions`+`L-Bureaucracy Quality`,data = pain2)
+summary(reg3)
+```
+
+A contrario de notre premiere regression, ici les coefficients ne sont pas du tout significatifs, ce qui sous entend que les depenses dans le domaine de l'education par le gouvernement n'ont aucune influence sur la croissance (ou non) du PIB du pays en question, cela pose questions car comme nous l'avons vu dans notre premier modele, le taux de lettres dans un pays, ou ici un sous continent, semblait avoir un impact sur la croissance du PIB du sous continent sub saharien, cela comforte notre theorie que notre premier modele est biaise et ne reflete pas la realite et qu'en realite, dans un modele plus complet on demontrerais que le taux de lettres n'a peu ou pas d'influence sur la croissance d'un pays ou d'un sous continent.
+Il est aussi possible que le taux de lettres soit malgre tout significatifs et impactant dans la realite mais cela semble a priori contradictoire avec les resultats que nous venons d'obtenir, si le taux de lettre a bien un effet, quelqu'il soit sur le PIB on s'attendrait logiquement a ce que les depenses  grouvernementales en termes d'education aient un effet elles aussi.
+On obtient un r carre ajuste negatif ce qui signifie que notre modele n'explique pas du tout la variance du PIB
+
+### Conclusion
+
+Au cours du premier projet collectif, nous avons exploré la croissance en Afrique subsaharienne à travers l'analyse de divers textes. Dans le semestre suivant, nous avons approfondi cette étude en utilisant des données et des chiffres pour réaliser une analyse économétrique. Comme anticipé, les résultats n'ont pas été significatifs, ce qui confirme que la croissance économique ne dépend pas uniquement de l'éducation, mais est également influencée par d'autres facteurs tels que le taux de chômage et le contexte géopolitique. Toutefois, en prenant du recul et en considérant l'ensemble des textes étudiés au cours du premier semestre, il est possible de déduire que l'éducation exerce un impact notable sur la croissance économique. Cette conclusion souligne l'importance de considérer une multiplicité de facteurs lors de l'évaluation des dynamiques de développement économique.
